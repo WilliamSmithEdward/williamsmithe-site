@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">Portfolio</a>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#work">Work</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main id="home" class="hero">
+        <div class="container">
+            <h1 class="hero-title">Building Digital Experiences</h1>
+            <p class="hero-subtitle">Crafting modern, scalable web applications with attention to detail and performance.</p>
+            <a href="#work" class="btn btn-primary">View My Work</a>
+        </div>
+    </main>
+
+    <section id="work" class="projects">
+        <div class="container">
+            <h2 class="section-title">Selected Works</h2>
+            <div class="projects-grid">
+                {% for project in projects %}
+                    <article class="project-card">
+                        <h3 class="card-title">{{ project.title }}</h3>
+                        <p class="card-description">{{ project.description }}</p>
+                        <div class="tags">
+                            {% for tag in project.tags %}
+                                <span class="tag">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        <a href="{{ project.link }}" class="card-link">View Project →</a>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <footer id="contact" class="footer">
+        <div class="container">
+            <p>&copy; {{ "now"|date("Y") }} Portfolio. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
