@@ -176,9 +176,10 @@ body {
 
 /* Projects Section */
 .projects {
-    padding: 100px 0;
-    background-color: var(--bg-primary);
+    padding: 80px 0;
+    background: linear-gradient(to bottom, transparent 5%, rgba(99, 102, 241, 0.03) 6%, var(--bg-primary));
 }
+
 
 .section-title {
     font-size: clamp(2rem, 5vw, 3rem);
