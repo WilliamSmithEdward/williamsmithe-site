@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class HomeController extends AbstractController
 {
@@ -42,20 +43,48 @@ class HomeController extends AbstractController
     }
 
     #[Route('/contact/send', name: 'contact_send', methods: ['POST'])]
-    public function sendContact(Request $request, MailerInterface $mailer): JsonResponse
+    public function sendContact(Request $request, MailerInterface $mailer, HttpClientInterface $httpClient): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
-        if (!$data || !isset($data['email']) || !isset($data['message']) || !isset($data['name'])) {
+        if (!$data || !isset($data['email']) || !isset($data['message']) || !isset($data['name']) || !isset($data['recaptcha_response'])) {
             return new JsonResponse(['status' => 'error', 'message' => 'Missing required fields.'], 400);
+        }
+
+        if (empty(trim($data['name'])) || empty(trim($data['email'])) || empty(trim($data['message']))) {
+            return new JsonResponse(['status' => 'error', 'message' => 'Fields cannot be empty.'], 400);
+        }
+
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return new JsonResponse(['status' => 'error', 'message' => 'Invalid email format.'], 400);
+        }
+
+        // Verify reCAPTCHA
+        try {
+            $response = $httpClient->request('POST', 'https://www.google.com/recaptcha/api/siteverify', [
+                'body' => [
+                    'secret'   => $_ENV['RECAPTCHA_SECRET_KEY'],
+                    'response' => $data['recaptcha_response'],
+                    'remoteip' => $request->getClientIp(),
+                ],
+            ]);
+
+            $result = $response->toArray();
+            if (!$result['success']) {
+                return new JsonResponse(['status' => 'error', 'message' => 'CAPTCHA verification failed. Please try again.'], 400);
+            }
+        } catch (\Exception $e) {
+            return new JsonResponse(['status' => 'error', 'message' => 'CAPTCHA verification error: ' . $e->getMessage()], 500);
         }
 
         try {
             $email = (new Email())
-                ->from($data['email'])
+                ->from('noreply@williamsmithe.com')
+                ->replyTo($data['email'])
                 ->to('williamsmithe@icloud.com')
                 ->subject('Portfolio Contact: ' . $data['name'])
-                ->text($data['message']);
+                ->html("Name: {$data['name']}<br />Email: {$data['email']}<br /><br />Message: {$data['message']}")
+                ->text("Name: {$data['name']}\nEmail: {$data['email']}\n\nMessage: {$data['message']}");
 
             $mailer->send($email);
 
