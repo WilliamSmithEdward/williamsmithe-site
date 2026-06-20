@@ -12,10 +12,9 @@
 <body>
     <nav class="navbar">
         <div class="container">
-            <a href="/" class="logo">Portfolio</a>
+            <a href="/" class="logo">Portfolio: <span class="logo-gradient">WilliamSmithE.com</span></a>
             <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
-                <li><a href="#work">Work</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
         </div>
@@ -23,15 +22,15 @@
 
     <main id="home" class="hero">
         <div class="container">
-            <h1 class="hero-title">Building Digital Experiences</h1>
-            <p class="hero-subtitle">Crafting modern, scalable web applications with attention to detail and performance.</p>
+            <h1 class="hero-title">Architecting Reliable Data Platforms</h1>
+            <p class="hero-subtitle">Modernizing legacy finance and operations systems into governed, API-first architectures that scale with confidence. Passionate about open-source tooling for data integration and legacy system interoperability.</p>
             <a href="#work" class="btn btn-primary">View My Work</a>
         </div>
     </main>
 
     <section id="work" class="projects">
         <div class="container">
-            <h2 class="section-title">Selected Works</h2>
+            <h2 class="section-title">Featured Implementations</h2>
             <div class="projects-grid">
                 {% for project in projects %}
                     <article class="project-card">
@@ -42,17 +41,131 @@
                                 <span class="tag">{{ tag }}</span>
                             {% endfor %}
                         </div>
-                        <a href="{{ project.link }}" class="card-link">View Project →</a>
+                        <a href="{{ project.link }}" class="card-link" target="_blank">View Project →</a>
                     </article>
                 {% endfor %}
             </div>
         </div>
     </section>
 
+    <section id="platforms" class="platforms">
+        <div class="container">
+            <div class="platforms-grid">
+                <a href="https://www.nuget.org/profiles/WilliamSmithE" class="platform-link" target="_blank">
+                    <img src="{{ asset('images/nuget.jpg') }}" alt="NuGet" class="platform-icon">
+                    <span>NuGet</span>
+                </a>
+                <a href="https://github.com/WilliamSmithEdward" class="platform-link" target="_blank">
+                    <img src="{{ asset('images/github.png') }}" alt="GitHub" class="platform-icon">
+                    <span>GitHub</span>
+                </a>
+                <a href="https://pypi.org/user/WilliamSmithE/" class="platform-link" target="_blank">
+                    <img src="{{ asset('images/pypi.jpg') }}" alt="PyPI" class="platform-icon">
+                    <span>PyPI</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <footer id="contact" class="footer">
         <div class="container">
-            <p>&copy; {{ "now"|date("Y") }} Portfolio. All rights reserved.</p>
+            <p>&copy; {{ "now"|date("Y") }} WilliamSmithE.com. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Get in Touch</h2>
+            <p>Have a question or want to collaborate? Send me a message!</p>
+            <form id="contactForm">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" required placeholder="Your Name">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" required placeholder="Your message..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Send Message</button>
+                <div id="formStatus" class="form-status"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('contactModal');
+        const btn = document.querySelector('.nav-links a[href="#contact"]');
+        const span = document.querySelector('.close-modal');
+        const form = document.getElementById('contactForm');
+        const statusDiv = document.getElementById('formStatus');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Open modal when clicking Contact link
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            modal.style.display = 'flex';
+        });
+
+        // Close modal when clicking X
+        span.onclick = () => {
+            modal.style.display = 'none';
+        };
+
+        // Close modal when clicking outside
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // Handle form submission
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                message: document.getElementById('message').value
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            statusDiv.textContent = '';
+
+            try {
+                const response = await fetch('/contact/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.className = 'form-status success';
+                    statusDiv.textContent = result.message;
+                    form.reset();
+                    setTimeout(() => {
+                        modal.style.display = 'none';
+                        statusDiv.textContent = '';
+                    }, 3000);
+                } else {
+                    throw new Error(result.message || 'Something went wrong');
+                }
+            } catch (error) {
+                statusDiv.className = 'form-status error';
+                statusDiv.textContent = error.message;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        };
+    </script>
 </body>
 </html>
