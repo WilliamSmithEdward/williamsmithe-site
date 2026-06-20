@@ -103,7 +103,6 @@ body {
     justify-content: center;
     padding-top: 80px;
     position: relative;
-    overflow: hidden;
 }
 
 .hero::before {
@@ -177,7 +176,24 @@ body {
 /* Projects Section */
 .projects {
     padding: 80px 0;
-    background: linear-gradient(to bottom, transparent 5%, rgba(99, 102, 241, 0.03) 6%, var(--bg-primary));
+    position: relative;
+}
+
+.projects::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: 0;
+    height: 402px;
+    background: radial-gradient(ellipse at top, var(--bg-secondary) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.projects .container {
+    position: relative;
+    z-index: 1;
 }
 
 
