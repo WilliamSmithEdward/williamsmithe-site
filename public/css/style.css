@@ -431,6 +431,17 @@ body {
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
+.form-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.g-recaptcha {
+    filter: brightness(0.8) contrast(0.9) grayscale(0.2);
+    display: flex;
+    justify-content: center;
+}
 .form-group textarea {
     min-height: 120px;
     resize: vertical;
