@@ -9,14 +9,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <link rel="icon" href="images/favicon.svg" sizes="any" type="image/svg+xml">
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
             <a href="/" class="logo">Portfolio: <span class="logo-gradient">WilliamSmithE.com</span></a>
             <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#contact">Contact</a></li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/" class="contact-trigger">Contact</a></li>
             </ul>
         </div>
     </nav>
@@ -25,7 +26,7 @@
         <div class="container">
             <h1 class="hero-title">Architecting Reliable Data Platforms</h1>
             <p class="hero-subtitle">Modernizing legacy finance and operations systems into governed, API-first architectures that scale with confidence. Passionate about open-source tooling for data integration and legacy system interoperability.</p>
-            <a href="#work" class="btn btn-primary">View My Work</a>
+            <a href="/" class="btn btn-primary work-trigger">View My Work</a>
         </div>
     </main>
 
@@ -104,11 +105,17 @@
 
     <script>
         const modal = document.getElementById('contactModal');
-        const btn = document.querySelector('.nav-links a[href="#contact"]');
+        const btn = document.querySelector('.contact-trigger');
         const span = document.querySelector('.close-modal');
         const form = document.getElementById('contactForm');
         const statusDiv = document.getElementById('formStatus');
         const submitBtn = document.getElementById('submitBtn');
+
+        // Smooth scroll to work section
+        document.querySelector('.work-trigger').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('work').scrollIntoView({ behavior: 'smooth' });
+        });
 
         // Open modal when clicking Contact link
         btn.addEventListener('click', (e) => {
