@@ -1,6 +1,6 @@
 # Programming Best Practices for Agentic AI Coding
 
-**Version:** 2026-06-10  
+**Version:** 2026-06-20  
 **Scope:** language-agnostic programming practices for human engineers and agentic AI coding assistants.  
 **Purpose:** give a coding agent clear, enforceable rules for producing maintainable, reviewable, testable, secure software.
 
@@ -8,7 +8,7 @@
 
 ## Qualification rule
 
-A practice is included in the **Research-Gated Practices** section only when the same core concept is supported by at least **three independent sources** in the source matrix.
+A practice is included in the **Research-Gated Practices** section only when the same core concept is supported by at least **three independent sources** in the source matrix. Here "independent" means three separately operated publishing organizations, not three pages from one site or author.
 
 The **User-Mandated Design Principles** section is included by request and is **not research-gated**.
 
@@ -644,6 +644,164 @@ In the final response or commit/PR description, include:
 
 ---
 
+## RG-21: Mind performance and resource budgets
+
+**Core rule:** Treat latency, throughput, and memory as real requirements. Set explicit budgets, measure before optimizing, and avoid accidental superlinear complexity and unbounded growth.
+
+**Agent behavior:**
+
+- Set performance budgets (a latency percentile, throughput, payload size, or memory ceiling) and enforce them in CI or a load test where the project supports it.
+- Measure before optimizing. Profile to find the real hotspot instead of hand-tuning code you guessed was slow.
+- Optimize the actual constraint. The first bottleneck you notice may not be the one that matters; check each resource for utilization, saturation, and errors.
+- Budget latency and throughput separately when workloads differ, and reason about latency as a distribution (p95, p99), not an average that hides the tail.
+- Avoid N+1 queries and per-row remote calls; batch or eager-load. Bound result sets and memory so nothing grows without limit under real load.
+
+**Acceptance criteria:**
+
+- Performance-sensitive paths have a stated budget that is checked, not just asserted.
+- Optimization changes cite a profile or benchmark and show a measured before and after.
+- Hot paths avoid superlinear complexity where a map, set, or batched query would be linear.
+
+**Bad smells:**
+
+- A query inside a loop over a collection, or an unbounded fetch with no pagination or cap.
+- Nested scans that are O(n^2) or worse where a linear structure would do.
+- Performance claimed from an average latency that hides the tail, or tuning with no measurement behind it.
+
+---
+
+## RG-22: Handle concurrency and shared state safely
+
+**Core rule:** Serialize access to shared mutable state through proper synchronization, and prefer immutability, message-passing, or higher-level concurrency primitives so programs are free of data races and deadlocks.
+
+**Agent behavior:**
+
+- Give every shared access a happens-before ordering through channels, locks, or atomics. A write that runs concurrently with another read or write to the same location, with no synchronization, is a data race.
+- Do not coordinate threads by spinning on plain shared variables or hand-rolled double-checked locking; publish state through real synchronization.
+- Prefer immutability and message-passing over shared mutable state; confine mutation behind synchronized types rather than handing out unsynchronized shared references.
+- Make compound read-modify-write operations atomic with a lock or an atomic type; visibility (for example a volatile field) is not atomicity.
+- Take multiple locks in one consistent global order to avoid circular-wait deadlock, or use tryLock with back-off.
+- Document the thread-safety of every public type: immutable, thread-safe, conditionally thread-safe, or not thread-safe, and which locks guard which fields.
+
+**Acceptance criteria:**
+
+- Every field shared across threads is immutable, thread-confined, or guarded by a documented lock or atomic.
+- Code that takes several locks uses one documented order; compound updates use atomics or a single critical section.
+- Public types state their thread-safety contract.
+
+**Bad smells:**
+
+- Coordinating threads by reading non-synchronized shared variables, or guarding only the write and leaving reads unsynchronized.
+- Sharing mutable state by default instead of reaching for message-passing or immutability.
+- A custom lock protocol where a library concurrency primitive would do.
+
+---
+
+## RG-23: Design error handling and resilience deliberately
+
+**Core rule:** Treat failure as a first-class case. Put a timeout on every remote call, retry only with capped backoff and jitter, make retried operations idempotent, isolate failures, degrade gracefully, and never silently swallow an exception.
+
+**Agent behavior:**
+
+- Set an explicit, finite timeout on every remote call, chosen from observed downstream latency, so a slow dependency cannot block threads or connections indefinitely.
+- Retry only transient failures, with capped exponential backoff plus jitter and a bounded attempt count; add a client-wide retry budget so a struggling backend is not buried by retry amplification.
+- Make any retriable operation idempotent (idempotency key, dedupe, or conditional write) so a retry after an ambiguous timeout does not double-apply.
+- Wrap failure-prone dependencies in a circuit breaker and partition resources with bulkheads so one failure cannot drain the whole process.
+- Degrade gracefully: serve cached, partial, or lower-fidelity responses and shed excess load deliberately rather than collapsing.
+- Never swallow exceptions. Catch only what you can handle, attach context, log it, and propagate or convert to an intentional fallback.
+
+**Acceptance criteria:**
+
+- Every outbound call has an explicit finite timeout; retries use capped backoff with jitter, a bounded count, and a budget.
+- Retriable operations are idempotent, verified by a test that replays a duplicate request and asserts a single effect.
+- Critical dependencies have a defined degraded or fallback behavior when they are down.
+
+**Bad smells:**
+
+- Empty catch blocks, or a catch-all that logs and continues with corrupt state.
+- Unconditional immediate retry loops, fixed-interval retries with no jitter, or retrying non-idempotent writes.
+- Unbounded blocking waits with no timeout.
+
+---
+
+## RG-24: Protect data privacy and handle PII responsibly
+
+**Core rule:** Collect the minimum personal data needed for a stated purpose, protect it in transit and at rest, keep it only as long as necessary, and never write PII or secrets to logs.
+
+**Agent behavior:**
+
+- Minimize collection and retention of PII to what the stated purpose requires; do not store fields you do not need.
+- Process personal data only for the purpose it was collected for; do not repurpose it without a new lawful basis.
+- Encrypt PII in transit and at rest, and gate access with least privilege.
+- Set retention periods and delete or anonymize personal data that is no longer needed.
+- Keep secrets and sensitive PII out of logs: mask tokens, passwords, keys, connection strings, payment data, and health or government identifiers before writing.
+
+**Acceptance criteria:**
+
+- Each stored personal field maps to a documented purpose and a retention or deletion period.
+- PII is encrypted in transit and at rest, with least-privilege access.
+- Logs contain no passwords, tokens, keys, connection strings, payment data, or sensitive PII.
+
+**Bad smells:**
+
+- Collecting personal data because it might be useful later, or indefinite retention with no review.
+- Full request or response bodies, headers, or stack traces logged without redaction.
+- Personal data reused for analytics, model training, or marketing with no fresh basis or consent.
+
+---
+
+## RG-25: Make schema and data migrations safe and reversible
+
+**Core rule:** Evolve the schema in small backward-compatible steps using expand-then-contract, decouple deploy from migrate, and never run a destructive change until the old code is gone and you have a tested rollback and a backup.
+
+**Agent behavior:**
+
+- Use parallel change: add the new shape alongside the old, dual-write and backfill while both coexist, switch reads, then remove the old shape, so running code is never broken.
+- Keep each change compatible with the currently deployed application version so any release can roll back independently of the migration.
+- Split destructive work across releases; never stop using a column and drop it in the same deploy.
+- Apply changes as versioned, ordered migration scripts run by tooling, tracked in a changelog, and identical across environments.
+- Test the migration and its rollback on production-like data, back up before any destructive step, and batch large backfills to avoid long locks.
+
+**Acceptance criteria:**
+
+- Each migration is a versioned script applied by tooling, and the schema stays compatible with the previously deployed application version.
+- A rollback procedure and a fresh backup exist and were exercised on production-like data before the destructive step.
+- Column or table drops happen in a later release than the code that stopped using them.
+
+**Bad smells:**
+
+- One migration that both adds the new shape and drops the old one, forcing a coordinated app-and-database deploy with no safe rollback.
+- Schema changes applied by hand in production, or a destructive ALTER or DROP with no backup and no tested fallback.
+- Backfilling a huge table in one locking statement instead of a batched, online migration.
+
+---
+
+## RG-26: Threat-model security-relevant changes
+
+**Core rule:** For any security-relevant change, threat model at design time: map assets, entry points, and trust boundaries, enumerate threats with a structured method, decide a mitigation for each, and revisit the model when the design changes.
+
+**Agent behavior:**
+
+- Frame the work around four questions: what are we building, what can go wrong, what will we do about it, and did we do a good enough job.
+- Model the system with a data flow diagram that makes trust boundaries, data flows, stores, processes, and external entities explicit.
+- Identify the assets worth protecting, and their confidentiality, integrity, and availability needs, before enumerating threats.
+- Enumerate threats with a structured taxonomy such as STRIDE per element or interaction rather than ad hoc brainstorming, and drive it with abuse and misuse cases.
+- Record an explicit decision for every threat (mitigate, eliminate, transfer, or accept) with an owner.
+- Do it during design and keep it current as the design evolves; a design-time fix is far cheaper than a production one.
+
+**Acceptance criteria:**
+
+- A security-relevant change ships with a current model of assets, entry points, and trust boundaries, and a recorded decision for every enumerated threat.
+- Threats are enumerated with a structured method over a data flow diagram, with abuse cases considered for each entry point.
+
+**Bad smells:**
+
+- Threat modeling done once at project start and never updated after the design changed, or skipped for changes that add entry points or cross trust boundaries.
+- A threat list with no mitigation decision or owner, or a model that jumps to controls before stating assets and boundaries.
+- Treating threat modeling as a compliance checkbox or a tool-only exercise.
+
+---
+
 # User-Mandated Design Principles
 
 These rules were requested directly and do not require the three-source research gate.
@@ -846,25 +1004,31 @@ Each research-gated practice below is backed by at least three independent sourc
 | ID | Practice | Source 1 | Source 2 | Source 3 |
 |---|---|---|---|---|
 | RG-01 | Small, focused changes | [Google Engineering Practices: Small CLs](https://google.github.io/eng-practices/review/developer/small-cls.html) | [Microsoft Engineering Playbook: Pull Requests](https://microsoft.github.io/code-with-engineering-playbook/code-reviews/pull-requests/) | [GitLab: Continuous integration best practices](https://about.gitlab.com/topics/ci-cd/continuous-integration-best-practices/) |
-| RG-02 | Reviewable code before merge | [Google Engineering Practices: Code Review](https://google.github.io/eng-practices/review/) | [Google Engineering Practices: What to look for in a review](https://google.github.io/eng-practices/review/reviewer/looking-for.html) | [Atlassian: Code review best practices](https://www.atlassian.com/blog/loom/code-review-best-practices-2) |
+| RG-02 | Reviewable code before merge | [Google Engineering Practices: Code Review](https://google.github.io/eng-practices/review/) | [SmartBear: Best Practices for Code Review](https://smartbear.com/learn/code-review/best-practices-for-peer-code-review/) | [Atlassian: Code review best practices](https://www.atlassian.com/blog/loom/code-review-best-practices-2) |
 | RG-03 | Deterministic validation | [OpenAI: Prompt guidance for coding agents](https://developers.openai.com/api/docs/guides/prompt-guidance) | [Microsoft: Unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices) | [GitLab: Continuous integration best practices](https://about.gitlab.com/topics/ci-cd/continuous-integration-best-practices/) |
-| RG-04 | Tests as behavior contracts | [Microsoft: Unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices) | [Martin Fowler: Test Pyramid](https://martinfowler.com/bliki/TestPyramid.html) | [Microsoft Azure Well-Architected: Testing](https://learn.microsoft.com/en-us/azure/well-architected/operational-excellence/testing) |
+| RG-04 | Tests as behavior contracts | [Microsoft: Unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices) | [Martin Fowler: Test Pyramid](https://martinfowler.com/bliki/TestPyramid.html) | [Software Engineering at Google: Testing Overview](https://abseil.io/resources/swe-book/html/ch11.html) |
 | RG-05 | Simplicity over unnecessary generality | [Google Engineering Practices: What to look for in a review](https://google.github.io/eng-practices/review/reviewer/looking-for.html) | [Martin Fowler: YAGNI](https://martinfowler.com/bliki/Yagni.html) | [Microsoft: Code metrics and cyclomatic complexity](https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1502) |
 | RG-06 | Clear names and consistent style | [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) | [Python PEP 8](https://peps.python.org/pep-0008/) | [Microsoft: C# coding conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions) |
 | RG-07 | Explicit contracts and stable interfaces | [OpenAPI Initiative](https://www.openapis.org/) | [Google Cloud API Design Guide](https://docs.cloud.google.com/apis/design) | [Microsoft Azure: API design](https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design) |
 | RG-08 | Documentation as deliverable | [GitHub Docs: About READMEs](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes) | [Google Developer Documentation Style Guide](https://developers.google.com/style) | [Microsoft Azure Well-Architected: Architecture decision records](https://learn.microsoft.com/en-us/azure/well-architected/architect-role/architecture-decision-record) |
-| RG-09 | Version-control hygiene | [Git SCM: Git](https://git-scm.com/) | [Atlassian Community: Git best practices](https://community.atlassian.com/forums/Bitbucket-articles/Git-Best-Practices/ba-p/1628803) | [Tao et al.: Commit message literature review](https://arxiv.org/abs/2202.02974) |
-| RG-10 | Dependency and supply-chain discipline | [OWASP Dependency-Check](https://owasp.org/www-project-dependency-check/) | [OWASP: Vulnerable Dependency Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html) | [GitHub Docs: Dependabot security updates](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-security-updates) |
+| RG-09 | Version-control hygiene | [Git Book: Commit Guidelines](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project) | [Atlassian Community: Git best practices](https://community.atlassian.com/forums/Bitbucket-articles/Git-Best-Practices/ba-p/1628803) | [Tian et al.: What Makes a Good Commit Message?](https://arxiv.org/abs/2202.02974) |
+| RG-10 | Dependency and supply-chain discipline | [OWASP Dependency-Check](https://owasp.org/www-project-dependency-check/) | [SLSA: Supply-chain Levels for Software Artifacts](https://slsa.dev/) | [GitHub Docs: Dependabot security updates](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-security-updates) |
 | RG-11 | Config and secrets outside source | [The Twelve-Factor App: Config](https://12factor.net/config) | [OWASP: Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html) | [GitHub Docs: Secret scanning](https://docs.github.com/code-security/secret-scanning/about-secret-scanning) |
 | RG-12 | Secure-by-design defaults | [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final) | [OWASP Secure Coding Practices Checklist](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/stable-en/02-checklist/05-checklist) | [CISA: Secure by Design](https://www.cisa.gov/securebydesign) |
 | RG-13 | Observability by design | [OpenTelemetry: Observability primer](https://opentelemetry.io/docs/concepts/observability-primer/) | [Google SRE Book: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/) | [Microsoft Azure Well-Architected: Observability](https://learn.microsoft.com/en-us/azure/well-architected/operational-excellence/observability) |
 | RG-14 | Safe refactoring | [Refactoring.com](https://refactoring.com/) | [Microsoft Visual Studio Docs: Refactoring](https://learn.microsoft.com/en-us/visualstudio/ide/refactoring-in-visual-studio) | [Martin Fowler: Refactoring, 2nd Edition](https://martinfowler.com/books/refactoring.html) |
-| RG-15 | CI as quality gate | [GitLab: CI/CD](https://about.gitlab.com/topics/ci-cd/) | [Atlassian: Continuous integration](https://www.atlassian.com/continuous-delivery/continuous-integration) | [Atlassian: Continuous delivery and testing](https://www.atlassian.com/continuous-delivery) |
+| RG-15 | CI as quality gate | [GitLab: CI/CD](https://about.gitlab.com/topics/ci-cd/) | [Atlassian: Continuous integration](https://www.atlassian.com/continuous-delivery/continuous-integration) | [Martin Fowler: Continuous Integration](https://martinfowler.com/articles/continuousIntegration.html) |
 | RG-16 | Architecture decisions recorded | [Microsoft Azure Well-Architected: ADRs](https://learn.microsoft.com/en-us/azure/well-architected/architect-role/architecture-decision-record) | [Architecture Decision Record GitHub organization](https://github.com/architecture-decision-record/architecture-decision-record) | [Nogueira et al.: Architecture decision records in practice](https://arxiv.org/abs/2604.27333) |
 | RG-17 | Repository-level AI-agent instructions | [OpenAI: Prompt guidance for coding agents](https://developers.openai.com/api/docs/guides/prompt-guidance) | [Anthropic: Claude Code best practices](https://code.claude.com/docs/en/best-practices) | [GitHub Docs: Repository custom instructions for Copilot](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions) |
 | RG-18 | Ground claims, do not fabricate | [NIST AI 600-1 Generative AI Profile (Confabulation)](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf) | [Socket: Slopsquatting and AI package hallucinations](https://socket.dev/blog/slopsquatting-how-ai-hallucinations-are-fueling-a-new-class-of-supply-chain-attacks) | [Trend Micro: Slopsquatting, hallucinated packages](https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/slopsquatting-when-ai-agents-hallucinate-malicious-packages) |
 | RG-19 | External content is untrusted input | [OWASP Gen AI: LLM01:2025 Prompt Injection](https://genai.owasp.org/llmrisk/llm01-prompt-injection/) | [Google Security: Mitigating prompt injection](https://blog.google/security/mitigating-prompt-injection-attacks/) | [arXiv: Are AI-assisted dev tools immune to prompt injection?](https://arxiv.org/pdf/2603.21642) |
 | RG-20 | Safe use of powerful tools | [OWASP Gen AI: LLM06:2025 Excessive Agency](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/) | [Anthropic: Building Effective AI Agents](https://www.anthropic.com/research/building-effective-agents) | [Google: Secure AI Framework (SAIF)](https://saif.google/secure-ai-framework) |
+| RG-21 | Performance and resource budgets | [Google SRE: Service Level Objectives](https://sre.google/sre-book/service-level-objectives/) | [MDN: Performance budgets](https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Performance_budgets) | [Brendan Gregg: The USE Method](https://www.brendangregg.com/usemethod.html) |
+| RG-22 | Concurrency and shared state | [The Go Memory Model](https://go.dev/ref/mem) | [The Rustonomicon: Send and Sync](https://doc.rust-lang.org/nomicon/send-and-sync.html) | [SEI CERT Oracle Coding Standard for Java (LCK07-J, VNA02-J)](https://cmu-sei.github.io/secure-coding-standards/sei-cert-oracle-coding-standard-for-java/rules/locking-lck/lck07-j) |
+| RG-23 | Error handling and resilience | [AWS Builders' Library: Timeouts, retries, and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) | [Google SRE: Addressing Cascading Failures](https://sre.google/sre-book/addressing-cascading-failures/) | [Microsoft Azure: Circuit Breaker pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker) |
+| RG-24 | Data privacy and PII | [NIST SP 800-122: Protecting PII](https://csrc.nist.gov/pubs/sp/800/122/final) | [GDPR Article 5: Processing principles](https://gdpr-info.eu/art-5-gdpr/) | [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) |
+| RG-25 | Safe and reversible migrations | [Martin Fowler: Evolutionary Database Design](https://martinfowler.com/articles/evodb.html) | [GitLab: Avoiding downtime in migrations](https://docs.gitlab.com/development/database/avoiding_downtime_in_migrations/) | [Google Cloud: Database migration concepts and principles](https://docs.cloud.google.com/architecture/database-migration-concepts-principles-part-1) |
+| RG-26 | Threat modeling | [OWASP: Threat Modeling Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html) | [Threat Modeling Manifesto](https://www.threatmodelingmanifesto.org/) | [NIST SP 800-154: Data-Centric System Threat Modeling](https://csrc.nist.gov/pubs/sp/800/154/ipd) |
 
 ---
 

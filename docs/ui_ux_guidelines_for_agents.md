@@ -1,7 +1,11 @@
 # Web UI/UX guidelines
 
-A working set of web UI/UX heuristics for Epiphany, with citations. These guide
-the design of the web client and are the bar a UI change is reviewed against.
+**Updated:** 2026-06-20
+
+A working set of web UI/UX heuristics, with citations, meant to be reused across
+projects. They guide web UI design and serve as a bar that UI changes are
+reviewed against. Drop them into any repo as-is, or copy individual heuristics
+into a design guide or agent context file.
 
 ## How this list was built (the evidence bar)
 
@@ -18,13 +22,6 @@ are the corroborating references found during that verification.
 
 This is a living document: add a heuristic only with three independent sources;
 record the sources inline.
-
-## Conformance in Epiphany
-
-The Epiphany web client (React + TypeScript, vendored Radix-based primitives,
-CSS-variable design tokens) is reviewed against these heuristics. Notable
-conformance work and the standing gaps are tracked at the end of this document
-under "Conformance status".
 
 ## Usability foundations
 
@@ -187,14 +184,14 @@ Sources:
 
 ### Constrain line length (measure) to 50-75 characters
 
-Limit body-text line length to roughly 50-75 characters per line (about 66 is optimal) and avoid exceeding ~80, because overly long lines make readers lose their place and tire from tracking back to the next line, while overly short lines disrupt reading rhythm by breaking up natural word groupings.
+Limit body-text line length to roughly 50-75 characters per line (about 66 is optimal) and avoid exceeding ~80, because overly long lines make readers lose their place and tire from tracking back to the next line, while overly short lines disrupt reading rhythm by breaking up natural word groupings. The 50-75 range is a typographic preference; WCAG 2.1 SC 1.4.8 only requires an 80-character maximum (40 for CJK), so treat 80 as the accessibility ceiling, not the target.
 
 Sources:
 - [Baymard Institute](https://baymard.com/blog/line-length-readability)
 - [Butterick's Practical Typography](https://practicaltypography.com/line-length.html)
 - [Smashing Magazine](https://www.smashingmagazine.com/2014/09/balancing-line-length-font-size-responsive-web-design/)
 - [Wikipedia (Line length)](https://en.wikipedia.org/wiki/Line_length)
-- [W3C Web Accessibility Initiative (WCAG 2.1 SC 1.4.8)](https://www.w3.org/WAI/WCAG21/Understanding/visual-presentation.html)
+- [W3C Web Accessibility Initiative (WCAG 2.1 SC 1.4.8, 80-character maximum)](https://www.w3.org/WAI/WCAG21/Understanding/visual-presentation.html)
 
 ### Use whitespace and proximity to group, not borders
 
@@ -238,6 +235,16 @@ Sources:
 - [LogRocket](https://blog.logrocket.com/ux-design/60-30-10-rule/)
 - [Adobe Spectrum](https://spectrum.adobe.com/page/button/)
 
+### Build responsive, reflowable layouts
+
+Build layouts on fluid grids, flexible images (max-width: 100%), and content-driven breakpoints written in relative units, starting mobile-first and adding columns as width allows, and always include the viewport meta tag (width=device-width, initial-scale=1) so breakpoints fire on real devices; content must reflow to a 320 CSS px viewport (equivalent to a 1280px viewport at 400% zoom) without loss of information or two-dimensional scrolling, except for content that genuinely needs a 2D layout such as data tables, maps, or diagrams (WCAG 1.4.10), and never disable pinch-zoom with user-scalable=no.
+
+Sources:
+- [W3C Web Accessibility Initiative (WCAG 2.1 SC 1.4.10 Reflow)](https://www.w3.org/WAI/WCAG21/Understanding/reflow.html)
+- [MDN Web Docs (Mozilla)](https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design)
+- [A List Apart (Ethan Marcotte)](https://alistapart.com/article/responsive-web-design/)
+- [web.dev (Google)](https://web.dev/articles/responsive-web-design-basics)
+
 ## Forms and data entry
 
 ### Use persistent visible labels; never use placeholders as labels
@@ -253,13 +260,15 @@ Sources:
 
 ### Validate on blur, not on every keystroke
 
-Run inline field validation when the user leaves (blurs) a field rather than on every keystroke, so a "reward early, punish late" pattern applies: surface a first-time error only after the field loses focus, but re-validate immediately on correction to confirm the fix.
+Run inline field validation when the user leaves (blurs) a field rather than on every keystroke, so a "reward early, punish late" pattern applies: surface a first-time error only after the field loses focus, debounce format-specific checks so users are not told their input is wrong prematurely, and re-validate immediately on correction, clearing the error the instant the input becomes valid to confirm the fix.
 
 Sources:
 - [Baymard Institute](https://baymard.com/blog/inline-form-validation)
 - [UX Movement](https://uxmovement.com/forms/why-users-make-more-errors-with-instant-inline-validation/)
 - [Smashing Magazine](https://www.smashingmagazine.com/2022/09/inline-validation-web-forms-ux/)
 - [Nielsen Norman Group](https://www.nngroup.com/articles/errors-forms-design-guidelines/)
+- [GOV.UK Design System](https://design-system.service.gov.uk/components/error-message/)
+- [Material Design (Google)](https://m2.material.io/components/text-fields)
 - [WDstack (Mihael Konjevic)](https://medium.com/wdstack/inline-validation-in-forms-designing-the-experience-123fb34088ce)
 
 ### Place specific, blame-free error messages next to the field
@@ -304,17 +313,6 @@ Sources:
 - [CSS-Tricks](https://css-tricks.com/better-form-inputs-for-better-mobile-user-experiences/)
 - [web.dev (Google)](https://web.dev/articles/sign-in-form-best-practices)
 - [Smashing Magazine](https://www.smashingmagazine.com/2018/08/best-practices-for-mobile-form-design/)
-
-### Validate forms inline at the right moment, and clear errors the instant input becomes valid
-
-Display each validation error next to the field it concerns, validate fields after the user leaves them (on blur) rather than while they are still typing, debounce format-specific checks so users are not told their input is wrong prematurely, and remove an error the instant the input becomes valid to confirm the fix.
-
-Sources:
-- [Baymard Institute](https://baymard.com/blog/inline-form-validation)
-- [Nielsen Norman Group](https://www.nngroup.com/articles/error-message-guidelines/)
-- [Smashing Magazine](https://www.smashingmagazine.com/2022/09/inline-validation-web-forms-ux/)
-- [GOV.UK Design System](https://design-system.service.gov.uk/components/error-message/)
-- [Material Design (Google)](https://m2.material.io/components/text-fields)
 
 ## Data tables and grids
 
@@ -540,7 +538,7 @@ Sources:
 
 ### Help users recognize, diagnose, and recover from errors
 
-Write error messages in plain language that name the exact problem and offer a concrete fix, place them inline next to the offending field (and, for multi-error forms, also summarize them at the top with links to each field), make them perceivable redundantly (text plus high-contrast styling, not color alone), and associate them with the field's label for assistive technology.
+Write error messages in plain language that name the exact problem and offer a concrete fix, place them inline next to the offending field (and, for multi-error forms, also summarize them at the top with links to each field), make them perceivable redundantly (text plus high-contrast styling, not color alone), and associate them with the field's label for assistive technology. Never blame the user or rely on obscure error codes, and do not use a validation error for a problem the user cannot fix (e.g., permissions or capacity), which should be handled separately.
 
 Sources:
 - [Nielsen Norman Group](https://www.nngroup.com/articles/error-message-guidelines/)
@@ -550,6 +548,8 @@ Sources:
 - [Baymard Institute](https://baymard.com/blog/inline-form-validation)
 - [W3C Web Accessibility Initiative (WAI)](https://www.w3.org/WAI/WCAG21/Understanding/error-suggestion)
 - [Deque Systems](https://www.deque.com/blog/anatomy-of-accessible-forms-error-messages/)
+- [Microsoft](https://learn.microsoft.com/en-us/windows/win32/debug/error-message-guidelines)
+- [Google](https://developers.google.com/workspace/chat/write-error-messages)
 
 ### Match feedback to the 3 response-time limits (0.1s / 1s / 10s)
 
@@ -574,16 +574,6 @@ Sources:
 - [Google Material Design](https://m2.material.io/components/progress-indicators)
 - [LogRocket](https://blog.logrocket.com/ux-design/skeleton-loading-screen-design/)
 
-### Write error messages that are specific, blame-free, and explain how to recover
-
-Write error messages in plain, human-readable language that state specifically what went wrong and constructively tell the user how to recover, never blaming the user or relying on obscure error codes, and don't use a validation error for a problem the user cannot fix (e.g., permissions or capacity) - handle those separately.
-
-Sources:
-- [Nielsen Norman Group](https://www.nngroup.com/articles/error-message-guidelines/)
-- [GOV.UK Design System](https://design-system.service.gov.uk/components/error-message)
-- [Microsoft](https://learn.microsoft.com/en-us/windows/win32/debug/error-message-guidelines)
-- [Google](https://developers.google.com/workspace/chat/write-error-messages)
-
 ### Apply optimistic UI for low-risk actions, with a clear rollback and undo
 
 For low-risk actions that almost always succeed (likes, toggles, archiving, reordering), update the UI immediately and reconcile with the server in the background to make the app feel instantaneous, but always implement a rollback that restores the prior state and surfaces a clear error (or Undo affordance) on failure, and instead wait for server confirmation on critical or failure-prone operations.
@@ -599,7 +589,7 @@ Sources:
 
 ### Make errors programmatically detectable and announced (accessible validation)
 
-Make form errors programmatically detectable and announced: set aria-invalid on failed fields, associate each error message with its control via aria-describedby, and place validation summaries in a role="alert" or aria-live region so assistive technology announces them, satisfying WCAG 3.3.1 (Error Identification) and 3.3.2 (Labels or Instructions).
+Make form errors programmatically detectable and announced: set aria-invalid on failed fields, associate each error message with its control via aria-describedby, and place validation summaries in a role="alert" or aria-live region so assistive technology announces them, satisfying WCAG 3.3.1 (Error Identification), with the live-region announcement covered by 4.1.3 (Status Messages) and the programmatic association by 1.3.1 (Info and Relationships).
 
 Sources:
 - [W3C Web Accessibility Initiative (WAI)](https://www.w3.org/WAI/tutorials/forms/notifications/)
@@ -607,6 +597,8 @@ Sources:
 - [Mozilla (MDN Web Docs)](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-invalid)
 - [Deque Systems](https://www.deque.com/blog/aria-invalid-error-indication/)
 - [TetraLogical](https://tetralogical.com/blog/2024/10/21/foundations-form-validation-and-error-messages/)
+- [Hidde de Vries (hidde.blog)](https://hidde.blog/how-to-make-inline-error-messages-accessible/)
+- [Smashing Magazine](https://www.smashingmagazine.com/2023/02/guide-accessible-form-validation/)
 
 ### Ensure full keyboard support with logical focus order and visible focus
 
@@ -619,10 +611,12 @@ Sources:
 - [Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/design/accessibility/keyboard-accessibility)
 - [Harvard University Digital Accessibility](https://accessibility.huit.harvard.edu/provide-logical-and-visible-focus-indication)
 - [Centre for Excellence in Universal Design](https://universaldesign.ie/communications-digital/web-and-mobile-accessibility/web-accessibility-techniques/developers-introduction-and-index/provide-an-accessible-page-structure-and-layout/maintain-a-logical-tab-and-reading-order-and-provide-a-clear-focus-indicator)
+- [W3C / Web Accessibility Initiative (no keyboard trap)](https://www.w3.org/WAI/WCAG21/Understanding/no-keyboard-trap.html)
+- [UK Home Office (User-Centred Design Manual)](https://design.homeoffice.gov.uk/accessibility/standard/operable)
 
 ### Make sorting obvious, accessible, and single-column by default
 
-Make sortable tables accessible by wrapping each sortable column-header label in a real button, applying aria-sort="ascending"/"descending" to only the single currently sorted header (removing the attribute on unsorted columns rather than setting aria-sort="none"), indicating sort direction with a shape-distinct icon rather than color alone, announcing sort changes through an aria-live region, and giving sortable columns a visible affordance.
+Make sortable tables accessible by wrapping each sortable column-header label in a real button, applying aria-sort="ascending"/"descending" to only the single currently sorted header (aria-sort="none" is the valid ARIA default, but because some screen readers historically announced it noisily, a common compatibility workaround is to remove the attribute on unsorted columns instead), indicating sort direction with a shape-distinct icon rather than color alone, announcing sort changes through an aria-live region, and giving sortable columns a visible affordance.
 
 Sources:
 - [W3C WAI-ARIA Authoring Practices (APG)](https://www.w3.org/WAI/ARIA/apg/patterns/table/examples/sortable-table/)
@@ -645,7 +639,7 @@ Sources:
 
 ### Meet WCAG color contrast minimums for text and UI components
 
-Ensure normal text meets at least a 4.5:1 contrast ratio against its background (3:1 for large text, defined as 18pt/24px or 14pt/19px bold) and non-text UI elements such as icons, buttons, borders, and form-field indicators meet at least 3:1 against adjacent colors, and never rely on color alone to convey information.
+Ensure normal text meets at least a 4.5:1 contrast ratio against its background (3:1 for large text, defined as 18pt/24px or 14pt bold/~18.7px) and non-text UI elements such as icons, buttons, borders, and form-field indicators meet at least 3:1 against adjacent colors, meeting the WCAG 2.1 Level AA minimum, and never rely on color alone to convey information.
 
 Sources:
 - [W3C Web Accessibility Initiative (WAI) - Understanding SC 1.4.3 Contrast (Minimum)](https://www.w3.org/TR/UNDERSTANDING-WCAG20/visual-audio-contrast-contrast.html)
@@ -655,18 +649,8 @@ Sources:
 - [Google Material Design](https://m2.material.io/design/usability/accessibility.html)
 - [Yale University Usability & Web Accessibility](https://usability.yale.edu/digital-accessibility/accessibility-resources/accessibility-articles/color)
 - [BrowserStack](https://www.browserstack.com/guide/color-contrast-for-accessibility)
-
-### Make all functionality operable by keyboard with logical order and no traps
-
-Every interactive control must be reachable and operable with the keyboard alone, follow a logical focus/Tab order that matches the visual reading order, and never trap focus so the user can always move away using standard keys.
-
-Sources:
-- [W3C / Web Accessibility Initiative (WAI)](https://www.w3.org/WAI/WCAG21/Understanding/no-keyboard-trap.html)
-- [MDN Web Docs (Mozilla)](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides/Understanding_WCAG/Keyboard)
-- [Nielsen Norman Group](https://www.nngroup.com/videos/no-mouse-keyboard-accessibility/)
-- [University of Washington (Accessible Technology)](https://www.washington.edu/accesstech/checklist/keyboard/)
-- [U.S. Web Design System (USWDS)](https://designsystem.digital.gov/components/modal/accessibility-tests/)
-- [UK Home Office (User-Centred Design Manual)](https://design.homeoffice.gov.uk/accessibility/standard/operable)
+- [MDN Web Docs / Mozilla](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides/Understanding_WCAG/Perceivable/Color_contrast)
+- [Bureau of Internet Accessibility (BOIA)](https://www.boia.org/blog/designing-for-color-contrast-guidelines-for-accessibility)
 
 ### Provide a clearly visible, high-contrast focus indicator
 
@@ -727,16 +711,6 @@ Sources:
 - [Silktide](https://silktide.com/accessibility-guide/the-wcag-standard/2-5/input-modalities/2-5-8-target-size-minimum/)
 - [DigitalA11Y](https://www.digitala11y.com/understanding-sc-2-5-8-target-size-minimum/)
 
-### Write clear, accessible error messages that aid recovery
-
-Communicate errors in plain, human-readable language placed close to the affected field, describe both the problem and how to fix it, signal errors with redundant cues (text plus icon plus color, never color alone), and associate the message with the field programmatically (e.g., aria-describedby) while exposing it via role=alert or a live region so screen reader users are notified.
-
-Sources:
-- [Nielsen Norman Group](https://www.nngroup.com/articles/error-message-guidelines/)
-- [W3C Web Accessibility Initiative (WCAG Technique ARIA19)](https://www.w3.org/TR/WCAG20-TECHS/ARIA19.html)
-- [Smashing Magazine](https://www.smashingmagazine.com/2023/02/guide-accessible-form-validation/)
-- [Hidde de Vries (hidde.blog)](https://hidde.blog/how-to-make-inline-error-messages-accessible/)
-
 ### On form submission errors, pair an error summary with inline field errors and move focus
 
 When a submitted form has validation errors, display an error summary at the top with an alerting title and clickable links that jump to each problem field, show an inline error message beside every affected input associated via aria-describedby, and move keyboard focus to the summary so assistive-technology users are informed.
@@ -770,17 +744,6 @@ Sources:
 - [Smashing Magazine (The Perfect Paragraph)](https://www.smashingmagazine.com/2011/11/the-perfect-paragraph/)
 - [Baymard Institute (Line length and readability)](https://baymard.com/blog/line-length-readability)
 
-### Meet WCAG text contrast minimums (4.5:1 / 3:1)
-
-Ensure normal-size text has a contrast ratio of at least 4.5:1 against its background and large text (at least 18pt, or 14pt bold) at least 3:1, meeting the WCAG 2.1 Level AA minimum for legible, accessible text.
-
-Sources:
-- [W3C / Web Accessibility Initiative (WCAG 2.1 SC 1.4.3, Understanding)](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum)
-- [W3C (WCAG Technique G18)](https://www.w3.org/WAI/WCAG21/Techniques/general/G18)
-- [WebAIM (Utah State University)](https://webaim.org/articles/contrast/)
-- [MDN Web Docs / Mozilla](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides/Understanding_WCAG/Perceivable/Color_contrast)
-- [Bureau of Internet Accessibility (BOIA)](https://www.boia.org/blog/designing-for-color-contrast-guidelines-for-accessibility)
-
 ### Never rely on color alone to convey meaning
 
 Never rely on color alone to convey meaning: whenever color signals state, errors, required fields, links, or categories, pair it with a second non-color cue such as text, an icon, an underline, or a shape or pattern, because color alone excludes users with color blindness or low vision and is not announced by screen readers.
@@ -792,36 +755,22 @@ Sources:
 - [Nielsen Norman Group](https://www.nngroup.com/articles/visual-treatments-accessibility/)
 - [Deque Systems](https://www.deque.com/blog/3-common-color-accessibility-issues-one-can-easily-avoid/)
 
-## Conformance status
+### Respect reduced-motion preferences and keep motion safe
 
-This section records how the Epiphany web client measures up against the
-heuristics above. It is updated as conformance work lands.
+Honor the user's reduced-motion preference and keep motion safe: gate vestibular-trigger animations (large pans, scaling, parallax, spin, 3D plane shifts) behind @media (prefers-reduced-motion: reduce), and watch the same query with window.matchMedia for script-driven motion, replacing harmful motion with a fade or an instant state change rather than stripping all feedback (WCAG 2.3.3); never flash content more than three times per second (WCAG 2.3.1); give auto-moving, blinking, or scrolling content that starts automatically and runs more than five seconds a way to pause, stop, or hide it (WCAG 2.2.2); and keep motion purposeful rather than decorative.
 
-### Already in place
+Sources:
+- [W3C Web Accessibility Initiative (WCAG 2.2 SC 2.2.2 / 2.3.1 / 2.3.3)](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html)
+- [MDN Web Docs (Mozilla)](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)
+- [WebKit (Apple)](https://webkit.org/blog/7551/responsive-design-for-motion/)
+- [web.dev (Google)](https://web.dev/articles/prefers-reduced-motion)
 
-- Consistent shell, navigation, and a persistent you-are-here breadcrumb; a
-  command palette and visible search affordance (navigation; recognition over
-  recall).
-- Vendored design-token system (type scale, spacing, color) with dark mode, and
-  a single accent reserved for primary actions (visual hierarchy; consistency).
-- Plain-language empty states and a first-run welcome card that point to a next
-  step rather than dead-ending (empty states; help).
-- Provenance drill-down, inline rule/flow error lines, and test reports
-  (feedback; help users recover).
-- Semantic table markup for the pivot grid with sticky headers and keyboard cell
-  entry (tables; keyboard support).
+### Design for internationalization and localization
 
-### Conformance changes in this pass
+Build the UI so language, script, and locale can change without code or layout changes: declare the document language with the lang attribute (and mark in-page language switches), leave room for text expansion instead of fixed-width text boxes, support right-to-left scripts with dir on the root element and CSS logical properties (inline-start/inline-end) rather than physical left/right, externalize all user-facing strings with translator context, build sentences from a single string with ordered placeholders rather than concatenating translated fragments or appending plural letters, and store text as UTF-8 while formatting dates, numbers, and currency with locale-aware APIs such as the Intl object.
 
-See the accompanying commit. Focus areas: announcing dynamic status and errors to
-assistive technology (ARIA live regions / roles), right-aligning numeric cells,
-making the loading-vs-empty-vs-error states distinct, persistent visible form
-labels, and a visible focus indicator.
-
-### Known gaps (need tooling or larger work)
-
-- A formal, audited WCAG pass (contrast ratios, full keyboard traversal) needs a
-  browser plus an axe-style auditor, which the headless build environment does
-  not have; the changes here are code-level conformance, not a certified audit.
-- Table virtualization for very large cellsets, adjustable density persistence,
-  and pagination over infinite scroll are larger follow-ons.
+Sources:
+- [W3C Internationalization (i18n) Activity](https://www.w3.org/International/techniques/authoring-html)
+- [MDN Web Docs (Mozilla)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl)
+- [Microsoft Learn (Globalization)](https://learn.microsoft.com/en-us/globalization/internationalization/concatenation)
+- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/right-to-left)
