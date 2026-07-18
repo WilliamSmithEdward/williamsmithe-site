@@ -2,7 +2,7 @@
 framework:
     secret: '%env(APP_SECRET)%'
     assets:
-        version: '20260718.1'
+        version: '20260718.2'
 
     # Note that the session will be started ONLY if you read or write from it.
     session: true

@@ -363,11 +363,12 @@ body {
     position: fixed;
     z-index: 2000;
     inset: 0;
+    height: 100dvh;
     background: rgba(10, 10, 15, 0.9);
     backdrop-filter: blur(8px);
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
 }
 
 .modal-content {
@@ -377,6 +378,10 @@ body {
     border-radius: 24px;
     width: 100%;
     max-width: 500px;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     position: relative;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     animation: modalAppear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -433,6 +438,7 @@ body {
     border-radius: 8px;
     color: var(--text-primary);
     font-family: inherit;
+    font-size: 1rem;
     transition: var(--transition);
 }
 
@@ -494,6 +500,11 @@ body {
 
     .hero-title {
         font-size: clamp(2.5rem, 12vw, 3rem);
+    }
+
+    .modal-content {
+        padding: 2rem 1rem 1.5rem;
+        border-radius: 16px;
     }
     
     .nav-links {
