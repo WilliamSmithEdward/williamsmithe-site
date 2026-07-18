@@ -10,6 +10,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Psr\Log\LoggerInterface;
 
 class HomeController extends AbstractController
 {
@@ -43,7 +44,7 @@ class HomeController extends AbstractController
     }
 
     #[Route('/contact/send', name: 'contact_send', methods: ['POST'])]
-    public function sendContact(Request $request, MailerInterface $mailer, HttpClientInterface $httpClient): JsonResponse
+    public function sendContact(Request $request, MailerInterface $mailer, HttpClientInterface $httpClient, LoggerInterface $logger): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
@@ -74,7 +75,9 @@ class HomeController extends AbstractController
                 return new JsonResponse(['status' => 'error', 'message' => 'CAPTCHA verification failed. Please try again.'], 400);
             }
         } catch (\Exception $e) {
-            return new JsonResponse(['status' => 'error', 'message' => 'CAPTCHA verification error: ' . $e->getMessage()], 500);
+            $logger->error('Contact CAPTCHA verification failed.', ['exception' => $e]);
+
+            return new JsonResponse(['status' => 'error', 'message' => 'Could not verify CAPTCHA. Please try again later.'], 500);
         }
 
         try {
@@ -90,7 +93,9 @@ class HomeController extends AbstractController
 
             return new JsonResponse(['status' => 'success', 'message' => 'Message sent successfully!']);
         } catch (\Exception $e) {
-            return new JsonResponse(['status' => 'error', 'message' => 'Could not send email: ' . $e->getMessage()], 500);
+            $logger->error('Contact email delivery failed.', ['exception' => $e]);
+
+            return new JsonResponse(['status' => 'error', 'message' => 'Could not send your message. Please try again later.'], 500);
         }
     }
 }
