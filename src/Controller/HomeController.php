@@ -31,10 +31,10 @@ class HomeController extends AbstractController
                 'link' => 'https://github.com/WilliamSmithEdward/pyOpenVBA'
             ],
             [
-                'title' => 'Epiphany',
-                'description' => 'A self-hostable, in-memory multidimensional OLAP server with a clean REST API and a React + TypeScript web UI built in Rust.',
-                'tags' => ['Rust', 'TypeScript', 'React', 'OLAP'],
-                'link' => 'https://github.com/WilliamSmithEdward/Epiphany'
+                'title' => 'AndromedaTM1Sharp',
+                'description' => 'A .NET client library for IBM TM1 and Planning Analytics OData v4 REST APIs, covering cube reads and writes, MDX queries, and TurboIntegrator process execution from C#.',
+                'tags' => ['C#', '.NET', 'IBM TM1', 'NuGet'],
+                'link' => 'https://github.com/WilliamSmithEdward/AndromedaTM1Sharp'
             ]
         ];
 
